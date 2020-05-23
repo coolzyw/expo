@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{ useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View ,TouchableOpacity,Platform, Image, } from 'react-native';
 import { Camera } from 'expo-camera';
 import * as Permissions from 'expo-permissions';
@@ -8,19 +8,18 @@ import * as ImagePicker from 'expo-image-picker';
 
 
 
-export default class App extends React.Component {
-    state = {
-        hasPermission: null,
-        cameraType: Camera.Constants.Type.back,
-        selectedImage: null,
-    }
+const App = () => {
+    const [hasPermission, setPermission] = useState(null);
+    const [cameraType, setCameraType] = useState(Camera.Constants.Type.back);
+    const [selectedImage, setImage] = useState(null);
+    const camera = useRef(null);
+    // state = {
+    //     hasPermission: null,
+    //     cameraType: Camera.Constants.Type.back,
+    //     selectedImage: null,
+    // }
 
-
-    async componentDidMount() {
-        this.getPermissionAsync()
-    }
-
-    getPermissionAsync = async () => {
+    const getPermissionAsync = async () => {
         // Camera roll Permission
         if (Platform.OS === 'ios') {
             const { status } = await Permissions.askAsync(Permissions.CAMERA_ROLL);
@@ -30,44 +29,60 @@ export default class App extends React.Component {
         }
         // Camera Permission
         const { status } = await Permissions.askAsync(Permissions.CAMERA);
-        this.setState({ hasPermission: status === 'granted' });
-    }
+        setPermission(status === 'granted');
+        // this.setState({ hasPermission: status === 'granted' });
+    };
 
-    handleCameraType=()=>{
-        const { cameraType } = this.state
+    const handleCameraType=(cameraType)=>{
+        // const { cameraType } = this.state
 
-        this.setState({cameraType:
-                cameraType === Camera.Constants.Type.back
-                    ? Camera.Constants.Type.front
-                    : Camera.Constants.Type.back
-        })
-    }
+        setCameraType(cameraType === Camera.Constants.Type.back
+            ? Camera.Constants.Type.front
+            : Camera.Constants.Type.back);
+        // this.setState({cameraType:
+        //         cameraType === Camera.Constants.Type.back
+        //             ? Camera.Constants.Type.front
+        //             : Camera.Constants.Type.back
+        // })
+    };
 
-    takePicture = async () => {
-        if (this.camera) {
-            let photo = await this.camera.takePictureAsync();
-            this.setState({selectedImage: photo.uri});
+    const takePicture = async () => {
+        if (camera) {
+            let photo = await camera.current.takePictureAsync();
+            setImage(photo.uri);
+            // this.setState({selectedImage: photo.uri});
         }
-    }
+    };
 
-    pickImage = async () => {
+    useEffect(() => {
+        getPermissionAsync();
+    },[]);
+
+
+    // async componentDidMount() {
+    //     this.getPermissionAsync()
+    // }
+
+
+
+
+    const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images
         });
-        this.setState({selectedImage: result.uri});
+        setImage(result.uri);
+        // this.setState({selectedImage: result.uri});
         console.log(result);
-    }
+    };
 
-
-
-    render(){
-        const { hasPermission } = this.state
+    const Render = () => {
+        // const { hasPermission } = this.state
         if (hasPermission === null) {
             return <View />;
         } else if (hasPermission === false) {
             return <Text>No access to camera</Text>;
         } else {
-            if (this.state.selectedImage !== null) {
+            if (selectedImage !== null) {
                 return (
                     <View style={styles.container}>
                         {/*<Image source={{ uri: 'https://i.imgur.com/TkIrScD.png' }} style={styles.logo} />*/}
@@ -76,7 +91,7 @@ export default class App extends React.Component {
                         </Text>
 
                         <Image
-                            source={{ uri: this.state.selectedImage }}
+                            source={{ uri: selectedImage }}
                             style={styles.thumbnail}
                         />
 
@@ -91,7 +106,7 @@ export default class App extends React.Component {
 
             return (
                 <View style={{ flex: 1 }}>
-                    <Camera style={{ flex: 1 }} type={this.state.cameraType}  ref={ref => {this.camera = ref}}>
+                    <Camera style={{ flex: 1 }} type={cameraType}  ref={camera}>
                         <View style={{flex:1, flexDirection:"row",justifyContent:"space-between",margin:30}}>
                             <TouchableOpacity
                                 style={{
@@ -99,7 +114,7 @@ export default class App extends React.Component {
                                     alignItems: 'center',
                                     backgroundColor: 'transparent'
                                 }}
-                                onPress={()=>this.pickImage()}>
+                                onPress={()=>pickImage()}>
                                 <Ionicons
                                     name="ios-photos"
                                     style={{ color: "#fff", fontSize: 40}}
@@ -111,7 +126,7 @@ export default class App extends React.Component {
                                     alignItems: 'center',
                                     backgroundColor: 'transparent',
                                 }}
-                                onPress={()=>this.takePicture()}
+                                onPress={()=>takePicture()}
                             >
                                 <FontAwesome
                                     name="camera"
@@ -124,7 +139,7 @@ export default class App extends React.Component {
                                     alignItems: 'center',
                                     backgroundColor: 'transparent',
                                 }}
-                                onPress={()=>this.handleCameraType()}
+                                onPress={()=>handleCameraType()}
                             >
                                 <MaterialCommunityIcons
                                     name="camera-switch"
@@ -136,8 +151,16 @@ export default class App extends React.Component {
                 </View>
             );
         }
-    }
-}
+    };
+
+    return (
+        <React.Fragment>
+            <Render> </Render>
+        </React.Fragment>
+    );
+
+
+};
 
 const styles = StyleSheet.create({
     container: {
@@ -172,3 +195,5 @@ const styles = StyleSheet.create({
         resizeMode: "contain"
     }
 });
+
+export default App;
